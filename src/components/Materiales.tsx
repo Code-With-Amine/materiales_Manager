@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
   collection,
   query,
@@ -12,13 +12,22 @@ import { db } from "../firebase";
 import deleteIcon from "../assets/bin.png";
 import editIcon from "../assets/edit.png";
 
+interface Material {
+  id: string;
+  data: {
+    nomArticle: string;
+    quantity: number;
+    caracts: string[] | string;
+  };
+}
+
 function Materiales() {
-  const [matirs, setMatirs] = useState([]);
-  const [alertMessage, setAlertMessage] = useState("");
-  const [filteredMatirs, setFilteredMatirs] = useState([]);
-  const [selectedMaterial, setSelectedMaterial] = useState(null);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editedData, setEditedData] = useState({
+  const [matirs, setMatirs] = useState<Material[]>([]);
+  const [alertMessage, setAlertMessage] = useState<string>("");
+  const [filteredMatirs, setFilteredMatirs] = useState<Material[]>([]);
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  const [editedData, setEditedData] = useState<Material["data"]>({
     nomArticle: "",
     quantity: 0,
     caracts: [],
@@ -30,7 +39,7 @@ function Materiales() {
       setMatirs(
         querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          data: doc.data(),
+          data: doc.data() as Material["data"],
         }))
       );
     });
@@ -40,7 +49,7 @@ function Materiales() {
     setFilteredMatirs(matirs);
   }, [matirs]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     const taskDocRef = doc(db, "materiales", id);
     try {
       await deleteDoc(taskDocRef);
@@ -53,14 +62,16 @@ function Materiales() {
     }
   };
 
-  const handleEdit = (matir) => {
+  const handleEdit = (matir: Material) => {
     setSelectedMaterial(matir);
     setEditedData(matir.data);
     setEditModalVisible(true);
   };
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!selectedMaterial) return;
+
     const matiralekDocRef = doc(db, "materiales", selectedMaterial.id);
     try {
       await updateDoc(matiralekDocRef, editedData);
@@ -73,8 +84,8 @@ function Materiales() {
     }
   };
 
-  const handleSearch = (e) => {
-    const searchTerm = e.target.value;
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value.toLowerCase();
     setFilteredMatirs(
       matirs.filter((matir) =>
         matir.data.nomArticle.toLowerCase().includes(searchTerm.toLowerCase())
@@ -158,7 +169,7 @@ function Materiales() {
                 type="number"
                 value={editedData.quantity}
                 onChange={(e) =>
-                  setEditedData({ ...editedData, quantity: e.target.value })
+                  setEditedData({ ...editedData, quantity: Number(e.target.value) })
                 }
               />
               <label>Characteristics</label>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
   collection,
   query,
@@ -12,13 +12,24 @@ import { db } from "../firebase";
 import deleteIcon from "../assets/bin.png";
 import editIcon from "../assets/edit.png";
 
+interface School {
+  id: string;
+  data: {
+    schoolName: string;
+    Adress: string;
+    phone: string;
+    email: string;
+    ville: string;
+  };
+}
+
 function Schools() {
-  const [schools, setSchools] = useState([]);
-  const [alertMessage, setAlertMessage] = useState("");
-  const [filteredSchools, setFilteredSchools] = useState([]);
-  const [selectedSchool, setSelectedSchool] = useState(null);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editedData, setEditedData] = useState({
+  const [schools, setSchools] = useState<School[]>([]);
+  const [alertMessage, setAlertMessage] = useState<string>("");
+  const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
+  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  const [editedData, setEditedData] = useState<School["data"]>({
     schoolName: "",
     Adress: "",
     phone: "",
@@ -32,7 +43,7 @@ function Schools() {
       onSnapshot(q, (querySnapshot) => {
         const fetchedSchools = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          data: doc.data(),
+          data: doc.data() as School["data"],
         }));
         setSchools(fetchedSchools);
         setFilteredSchools(fetchedSchools); // Update filteredSchools after fetching data
@@ -42,7 +53,7 @@ function Schools() {
     fillSchools();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     const taskDocRef = doc(db, "schools", id);
     try {
       await deleteDoc(taskDocRef);
@@ -55,15 +66,15 @@ function Schools() {
     }
   };
 
-  const handleEdit = (school) => {
+  const handleEdit = (school: School) => {
     setSelectedSchool(school);
     setEditedData(school.data);
     setEditModalVisible(true);
   };
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const schoolDocRef = doc(db, "schools", selectedSchool.id);
+    const schoolDocRef = doc(db, "schools", selectedSchool!.id);
     try {
       await updateDoc(schoolDocRef, editedData);
       setAlertMessage("School updated successfully.");
@@ -75,8 +86,8 @@ function Schools() {
     }
   };
 
-  const handleSearch = (e) => {
-    const searchTerm = e.target.value;
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value.toLowerCase();
     setFilteredSchools(
       schools.filter((school) =>
         school.data.schoolName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -84,7 +95,7 @@ function Schools() {
     );
   };
 
-  const showFirstLetters = (word) => {
+  const showFirstLetters = (word: string) => {
     return `${word.substring(0, 20)} ...`;
   };
 

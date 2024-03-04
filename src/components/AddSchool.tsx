@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useState, ChangeEvent, FormEvent } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 
+interface FormData {
+  schoolName: string;
+  Adress: string;
+  email: string;
+  phone: string;
+  ville: string;
+  created: Date | Timestamp;
+}
+
 function AddScholl() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     schoolName: "",
     Adress: "",
     email: "",
@@ -11,33 +20,34 @@ function AddScholl() {
     ville: "",
     created: Timestamp.now(),
   });
-  const [alertMessage, setAlertMessage] = useState("");
+  const [alertMessage, setAlertMessage] = useState<string>("");
 
-  const handelChange = (e) => {
+  const handelChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const showAlert = (mesg) => {
+  const showAlert = (mesg: string) => {
     setAlertMessage(mesg);
-      setTimeout(() => {
-        setAlertMessage("");
-      }, 5000); // Remove alert after 3 seconds
-  }
+    setTimeout(() => {
+      setAlertMessage("");
+    }, 5000); // Remove alert after 5 seconds
+  };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const res = await addDoc(collection(db, "schools"), formData);
+      await addDoc(collection(db, "schools"), formData);
       showAlert('Successfully added');
     } catch (err) {
-      showAlert('something went wrong please try again');
+      showAlert('Something went wrong. Please try again.');
       console.log(err);
     }
   };
+
   return (
     <form onSubmit={handleSubmit} className="AddForm">
-       {alertMessage && (
+      {alertMessage && (
         <div className="alert">
           {alertMessage}
         </div>
@@ -50,30 +60,26 @@ function AddScholl() {
         />
       </div>
       <div>
-      <label>Adress</label>
+        <label>Adress</label>
         <input name="Adress" onChange={handelChange} />
       </div>
-     <div>
-      <label> email </label>
+      <div>
+        <label> email </label>
         <input
-            name="email"
-            type="email"
-            onChange={handelChange}
-          />
-     </div>
-     <div>
-      <label>phone</label>
+          name="email"
+          type="email"
+          onChange={handelChange}
+        />
+      </div>
+      <div>
+        <label>phone</label>
         <input name="phone" onChange={handelChange} />
       </div>
       <div>
-      <label>ville</label>
+        <label>ville</label>
         <input name="ville" onChange={handelChange} />
       </div>
-    
       <button type="submit">Add</button>
-      <div>
-
-      </div>
     </form>
   );
 }

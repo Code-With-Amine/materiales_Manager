@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
   collection,
   query,
@@ -8,44 +8,67 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-
 import { db } from "../firebase";
 
+interface Material {
+  id: string;
+  data: {
+    nomArticle: string;
+    quantity: number;
+  };
+}
+
+interface School {
+  id: string;
+  data: {
+    schoolName: string;
+    ville: string;
+  };
+}
+
+interface FormData {
+  materileRef: string | null;
+  schoolRef: string | null;
+  quantityBenificer: number;
+}
+
 function AddBenificier() {
-  const [matirs, setMatirs] = useState([]);
-  const [schools, setSchools] = useState([]);
-  const [formData, setFormData] = useState({
+  const [matirs, setMatirs] = useState<Material[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [formData, setFormData] = useState<FormData>({
     materileRef: null,
     schoolRef: null,
     quantityBenificer: 0,
   });
-  const [alertMessage, setAlertMessage] = useState("");
+  const [alertMessage, setAlertMessage] = useState<string>("");
 
   useEffect(() => {
     const q = query(collection(db, "materiales"), orderBy("created", "desc"));
-    onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setMatirs(
         querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          data: doc.data(),
+          data: doc.data() as Material["data"],
         }))
       );
     });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     const q = query(collection(db, "schools"), orderBy("schoolName", "desc"));
-    onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setSchools(
         querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          data: doc.data(),
+          data: doc.data() as School["data"],
         }))
       );
     });
+    return () => unsubscribe();
   }, []);
 
-  const handelChange = (e) => {
+  const handelChange = (e: ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -64,48 +87,45 @@ function AddBenificier() {
 
   const handleUpdate = async () => {
     const oldQuantity = matirs.find((mat) => mat.id === formData.materileRef);
-    const quantity = oldQuantity.data.quantity;
-    const newQte = quantity - formData.quantityBenificer;
-    const matiralekDocRef = doc(db, "materiales", formData.materileRef);
-    try {
-      await updateDoc(matiralekDocRef, {
-        quantity: newQte,
-      });
-
-    } catch (err) {
-      console.log(err);
+    if (oldQuantity) {
+      const quantity = oldQuantity.data.quantity;
+      const newQte = quantity - formData.quantityBenificer;
+      const matiralekDocRef = doc(db, "materiales", formData.materileRef!); // Specify type assertion for formData.materileRef
+      try {
+        await updateDoc(matiralekDocRef, {
+          quantity: newQte,
+        });
+      } catch (err) {
+        console.log(err);
+      }
     }
   };
 
-  const handelSubmit = (e) => {
+  const handelSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    let err = false 
+    let err = false;
     // check if the quantity giving is less or equal to the one in the database
     matirs.forEach((matir) => {
       if (matir.id === formData.materileRef) {
-        if (matir.data.quantity < parseInt(formData.quantityBenificer)) {
-           err = true;
-           setAlertMessage("quantity giving is greater than the ones in DB");
+        if (matir.data.quantity < formData.quantityBenificer) {
+          err = true;
+          setAlertMessage("quantity giving is greater than the ones in DB");
           return;
         }
       }
     });
     if (!err) {
       // add to the beneficiaire table
-        handelAdd();
+      handelAdd();
 
       // update the matirale table
-       handleUpdate();
+      handleUpdate();
     }
   };
 
   return (
     <div>
-      {alertMessage && (
-        <div className="alert">
-          {alertMessage}
-        </div>
-      )}
+      {alertMessage && <div className="alert">{alertMessage}</div>}
       {matirs.length > 0 && schools.length > 0 ? (
         <form onSubmit={handelSubmit} className="AddForm">
           <div>
@@ -115,7 +135,7 @@ function AddBenificier() {
               {schools.map((school) => (
                 <option key={school.id} value={school.id}>
                   {" "}
-                  {school.data.schoolName}{" - "}{school.data.ville}
+                  {school.data.schoolName} - {school.data.ville}
                 </option>
               ))}
             </select>

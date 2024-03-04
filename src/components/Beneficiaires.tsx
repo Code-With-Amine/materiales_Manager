@@ -1,24 +1,54 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import {
   collection,
   query,
   orderBy,
   onSnapshot,
-  addDoc,
   doc,
-  updateDoc,
   deleteDoc,
 } from "firebase/firestore";
 import deleteIcon from "../assets/bin.png";
 import { db } from "../firebase";
 
+interface Beneficiaire {
+  id: string;
+  data: {
+    materileRef: string;
+    quantityBenificer: number;
+    schoolRef: string;
+  };
+}
+
+interface BeneficiaireData {
+  materileRef: string;
+  quantityBenificer: number;
+  schoolRef: string;
+}
+
+interface Material {
+  id: string;
+  data: {
+    nomArticle: string;
+    caracts: string;
+  };
+}
+
+interface School {
+  id: string;
+  data: {
+    schoolName: string;
+    phone: string;
+    ville: string;
+  };
+}
+
 function Beneficiaires() {
-  const [matirs, setMatirs] = useState([]);
-  const [schools, setSchools] = useState([]);
-  const [beneficiaires, setBeneficiaires] = useState([]);
-  const [beneficiaireData, setBeneficiaireData] = useState([]);
-  const [filteredBeneficiaires, setFilteredBeneficiaires] = useState([]);
-  const [alertMessage, setAlertMessage] = useState("");
+  const [matirs, setMatirs] = useState<Material[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [beneficiaires, setBeneficiaires] = useState<Beneficiaire[]>([]);
+  const [beneficiaireData, setBeneficiaireData] = useState<any[]>([]); // Any temporarily, should replace with a proper type
+  const [filteredBeneficiaires, setFilteredBeneficiaires] = useState<any[]>([]); // Any temporarily, should replace with a proper type
+  const [alertMessage, setAlertMessage] = useState<string>("");
 
   useEffect(() => {
     const q = query(collection(db, "materiales"), orderBy("created", "desc"));
@@ -26,7 +56,7 @@ function Beneficiaires() {
       setMatirs(
         querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          data: doc.data(),
+          data: doc.data() as Material["data"],
         }))
       );
     });
@@ -38,7 +68,7 @@ function Beneficiaires() {
       setSchools(
         querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          data: doc.data(),
+          data: doc.data() as School["data"],
         }))
       );
     });
@@ -53,7 +83,7 @@ function Beneficiaires() {
       setBeneficiaires(
         querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          data: doc.data(),
+          data: doc.data() as BeneficiaireData,
         }))
       );
     });
@@ -61,7 +91,7 @@ function Beneficiaires() {
 
   useEffect(() => {
     const data = beneficiaires.map((ben) => {
-      const obj = {
+      const obj: any = {
         id: ben.id,
         quantityBenificer: ben.data.quantityBenificer,
       };
@@ -84,24 +114,26 @@ function Beneficiaires() {
     setFilteredBeneficiaires(data); // Initially set filteredBeneficiaires to all data
   }, [schools, matirs, beneficiaires]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     try {
       await deleteDoc(doc(db, "beneficiaire", id));
-      setBeneficiaireData(beneficiaireData.filter((item) => item.id !== id));
-      setFilteredBeneficiaires(
-        filteredBeneficiaires.filter((item) => item.id !== id)
+      setBeneficiaireData((prevState) =>
+        prevState.filter((item) => item.id !== id)
+      );
+      setFilteredBeneficiaires((prevState) =>
+        prevState.filter((item) => item.id !== id)
       );
       setAlertMessage("Beneficiary deleted successfully.");
       setTimeout(() => {
         setAlertMessage("");
       }, 3000); // Remove alert after 3 seconds
     } catch (error) {
-            setAlertMessage("Error deleting document try again later.");
-            console.error("Error deleting document: ", error);
+      setAlertMessage("Error deleting document. Please try again later.");
+      console.error("Error deleting document: ", error);
     }
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     const searchTerm = e.target.value.toLowerCase();
     setFilteredBeneficiaires(
       beneficiaireData.filter(
