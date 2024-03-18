@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import deleteIcon from "../assets/bin.png";
 import { db } from "../firebase";
+import Spinner from "./Spinner";
 
 interface Beneficiaire {
   id: string;
@@ -123,13 +124,15 @@ function Beneficiaires() {
       setFilteredBeneficiaires((prevState) =>
         prevState.filter((item) => item.id !== id)
       );
-      setAlertMessage("Beneficiary deleted successfully.");
+      setAlertMessage("Bénéficiaire supprimé avec succès.");
       setTimeout(() => {
         setAlertMessage("");
       }, 3000); // Remove alert after 3 seconds
     } catch (error) {
-      setAlertMessage("Error deleting document. Please try again later.");
-      console.error("Error deleting document: ", error);
+      setAlertMessage(
+        "Erreur lors de la suppression du document. Veuillez réessayer plus tard."
+      );
+      console.error("Erreur lors de la suppression du document : ", error);
     }
   };
 
@@ -145,48 +148,71 @@ function Beneficiaires() {
     );
   };
 
+  const handleQuantitySearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const searchValue = parseInt(e.target.value);
+    if (searchValue) {
+      setFilteredBeneficiaires(
+        beneficiaireData.filter(
+          (beneficiaire) => beneficiaire.quantityBenificer >= searchValue
+        )
+      );
+    }
+  };
+
   return (
     <div>
       {alertMessage && <div className="alert">{alertMessage}</div>}
-      <input
-        type="text"
-        placeholder="Search by school, article name, or city"
-        onChange={handleSearch}
-        className="search-bar"
-      />
-      <table>
-        <thead>
-          <tr>
-            <th>Article Name</th>
-            <th>Quantity</th>
-            <th>Caracts</th>
-            <th>School Name</th>
-            <th>Phone</th>
-            <th>City</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredBeneficiaires.map((beneficiaire) => (
-            <tr key={beneficiaire.id} className="table-row">
-              <td>{beneficiaire.nomArticle}</td>
-              <td>{beneficiaire.quantityBenificer}</td>
-              <td>{beneficiaire.caracts}</td>
-              <td>{beneficiaire.schoolName}</td>
-              <td>{beneficiaire.phone}</td>
-              <td>{beneficiaire.ville}</td>
-              <td>
-                <img
-                  src={deleteIcon}
-                  alt="delete Icon"
-                  className="icon"
-                  onClick={() => handleDelete(beneficiaire.id)}
-                />
-              </td>
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Rechercher par école, nom de l'article ou ville"
+          onChange={handleSearch}
+          className="search-bar"
+        />
+        <input
+          type="number"
+          placeholder="Rechercher par quantité"
+          onChange={handleQuantitySearch}
+          className="search-bar"
+        />
+      </div>
+      {filteredBeneficiaires.length > 0 ? (
+        <table>
+          <thead>
+            <tr>
+              <th>Nom de l'article</th>
+              <th>Quantité</th>
+              <th>Caractéristiques</th>
+              <th>Nom de l'école</th>
+              <th>Téléphone</th>
+              <th>Ville</th>
+              <th>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredBeneficiaires.map((beneficiaire) => (
+              <tr key={beneficiaire.id} className="table-row">
+                <td>{beneficiaire.nomArticle}</td>
+                <td>{beneficiaire.quantityBenificer}</td>
+                <td>{beneficiaire.caracts}</td>
+                <td>{beneficiaire.schoolName}</td>
+                <td>{beneficiaire.phone}</td>
+                <td>{beneficiaire.ville}</td>
+                <td>
+                  <img
+                    src={deleteIcon}
+                    alt="Icône de suppression"
+                    className="icon"
+                    onClick={() => handleDelete(beneficiaire.id)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <Spinner />
+      )}
     </div>
   );
 }

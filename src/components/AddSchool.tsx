@@ -1,6 +1,7 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
+import Papa from "papaparse";
 
 interface FormData {
   schoolName: string;
@@ -21,6 +22,38 @@ function AddScholl() {
     created: Timestamp.now(),
   });
   const [alertMessage, setAlertMessage] = useState<string>("");
+  const [uploadError, setUploadError] = useState<string>("");
+
+  const handleUpload = async (event: any) => {
+    const file = event.target.files[0];
+    setUploadError(""); // Clear any previous errors
+    if (!file) {
+      setUploadError("Please select an csv file to upload.");
+      return;
+    }
+    try {
+      // Parse CSV data (replace with your Firestore collection reference)
+      const csvData: string[][] = await new Promise((resolve, reject) => {
+        Papa.parse(file, {
+          complete: (results: any) => resolve(results.data),
+          error: (error) => reject(error),
+        });
+      });
+
+      for (const row of csvData.slice(1)) {
+        const data = await addToDB({
+          schoolName: row[0],
+          ville: row[1],
+          Adress: row[2],
+          email: row[3],
+          phone: row[4],
+        });
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploadError("An error occurred during upload. Please try again.");
+    }
+  };
 
   const handelChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -34,52 +67,64 @@ function AddScholl() {
     }, 5000); // Remove alert after 5 seconds
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // check if all fields are filled correctlly
+    let err = false;
+    const values = Object.values(formData);
+    values.forEach((value) => {
+      if (value === "" || value == undefined || value == null) {
+        showAlert("Tout les champ est obligatoire");
+        return (err = true);
+      }
+    });
+    if (err) return;
+    addToDB(formData);
+  };
+
+  const addToDB = async (data: any) => {
     try {
-      await addDoc(collection(db, "schools"), formData);
-      showAlert('Successfully added');
+      await addDoc(collection(db, "schools"), data);
+      showAlert("Ajouté avec succès");
     } catch (err) {
-      showAlert('Something went wrong. Please try again.');
+      showAlert("Quelque chose s'est mal passé. Veuillez réessayer.");
       console.log(err);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="AddForm">
-      {alertMessage && (
-        <div className="alert">
-          {alertMessage}
-        </div>
-      )}
+      {alertMessage && <div className="alert">{alertMessage}</div>}
       <div>
-        <label>nom de L'ecole</label>
-        <input
-          name="schoolName"
-          onChange={handelChange}
-        />
+        <label>Nom de l'école</label>
+        <input name="schoolName" onChange={handelChange} />
       </div>
       <div>
-        <label>Adress</label>
+        <label>Adresse</label>
         <input name="Adress" onChange={handelChange} />
       </div>
       <div>
-        <label> email </label>
-        <input
-          name="email"
-          type="email"
-          onChange={handelChange}
-        />
+        <label>Email</label>
+        <input name="email" type="email" onChange={handelChange} />
       </div>
       <div>
-        <label>phone</label>
+        <label>Téléphone</label>
         <input name="phone" onChange={handelChange} />
       </div>
       <div>
-        <label>ville</label>
+        <label>Ville</label>
         <input name="ville" onChange={handelChange} />
       </div>
-      <button type="submit">Add</button>
+      <div className="spearatingLine">
+        {" "}
+        <span></span> <p>OU</p> <span></span>{" "}
+      </div>
+      <div>
+        <input type="file" accept=".csv" onChange={handleUpload} />
+
+        {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+      </div>
+      <button type="submit">Ajouter</button>
     </form>
   );
 }

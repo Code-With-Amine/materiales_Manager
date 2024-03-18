@@ -68,7 +68,9 @@ function AddBenificier() {
     return () => unsubscribe();
   }, []);
 
-  const handelChange = (e: ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+  const handelChange = (
+    e: ChangeEvent<HTMLSelectElement | HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -76,7 +78,7 @@ function AddBenificier() {
   const handelAdd = async () => {
     try {
       await addDoc(collection(db, "beneficiaire"), formData);
-      setAlertMessage("Successfully added");
+      setAlertMessage("Ajouté avec succès");
       setTimeout(() => {
         setAlertMessage("");
       }, 3000); // Remove alert after 3 seconds
@@ -95,8 +97,8 @@ function AddBenificier() {
         await updateDoc(matiralekDocRef, {
           quantity: newQte,
         });
-      } catch (err) {
-        console.log(err);
+      } catch (err: any) {
+        setAlertMessage(err);
       }
     }
   };
@@ -109,7 +111,7 @@ function AddBenificier() {
       if (matir.id === formData.materileRef) {
         if (matir.data.quantity < formData.quantityBenificer) {
           err = true;
-          setAlertMessage("quantity giving is greater than the ones in DB");
+          setAlertMessage("la quantité donnée est supérieure à celle de DB");
           return;
         }
       }
@@ -129,31 +131,29 @@ function AddBenificier() {
       {matirs.length > 0 && schools.length > 0 ? (
         <form onSubmit={handelSubmit} className="AddForm">
           <div>
-            <label> schools</label>
+            <label>Écoles</label>
             <select name="schoolRef" onChange={handelChange} required>
-              <option value="no-choose"> selecter une ecole</option>
+              <option value="no-choose">Sélectionnez une école</option>
               {schools.map((school) => (
                 <option key={school.id} value={school.id}>
-                  {" "}
                   {school.data.schoolName} - {school.data.ville}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label> materials</label>
+            <label>Matériaux</label>
             <select name="materileRef" onChange={handelChange} required>
-              <option value="no-choose"> selecter une materials</option>
+              <option value="no-choose">Sélectionnez un matériau</option>
               {matirs.map((matr) => (
                 <option key={matr.id} value={matr.id}>
-                  {" "}
-                  {matr.data.nomArticle}{" "}
+                  {matr.data.nomArticle}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label>Quantity beneficiaire</label>
+            <label>Quantité bénéficiaire</label>
             <input
               type="number"
               name="quantityBenificer"
@@ -161,10 +161,10 @@ function AddBenificier() {
               required
             />
           </div>
-          <button type="submit">Add</button>
+          <button type="submit">Ajouter</button>
         </form>
       ) : (
-        <p>there are no schools or materials set on the database</p>
+        <p>Aucune école ou matériau n'est défini dans la base de données</p>
       )}
     </div>
   );

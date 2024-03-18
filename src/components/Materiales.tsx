@@ -11,6 +11,7 @@ import {
 import { db } from "../firebase";
 import deleteIcon from "../assets/bin.png";
 import editIcon from "../assets/edit.png";
+import Spinner from "./Spinner";
 
 interface Material {
   id: string;
@@ -25,7 +26,9 @@ function Materiales() {
   const [matirs, setMatirs] = useState<Material[]>([]);
   const [alertMessage, setAlertMessage] = useState<string>("");
   const [filteredMatirs, setFilteredMatirs] = useState<Material[]>([]);
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
+    null
+  );
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [editedData, setEditedData] = useState<Material["data"]>({
     nomArticle: "",
@@ -53,10 +56,10 @@ function Materiales() {
     const taskDocRef = doc(db, "materiales", id);
     try {
       await deleteDoc(taskDocRef);
-      setAlertMessage("Material deleted successfully.");
+      setAlertMessage("Matériau supprimé avec succès.");
       setTimeout(() => {
         setAlertMessage("");
-      }, 3000); // Remove alert after 3 seconds
+      }, 3000); // Supprimer l'alerte après 3 secondes
     } catch (err) {
       alert(err);
     }
@@ -75,10 +78,10 @@ function Materiales() {
     const matiralekDocRef = doc(db, "materiales", selectedMaterial.id);
     try {
       await updateDoc(matiralekDocRef, editedData);
-      setAlertMessage("Material updated successfully.");
+      setAlertMessage("Matériau mis à jour avec succès.");
       setTimeout(() => {
         setAlertMessage("");
-      }, 3000); // Remove alert after 3 seconds
+      }, 3000); // Supprimer l'alerte après 3 secondes
     } catch (err) {
       alert(err);
     }
@@ -93,24 +96,44 @@ function Materiales() {
     );
   };
 
+  const handleQuantitySearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const searchValue = parseInt(e.target.value);
+    if (searchValue) {
+      setFilteredMatirs(
+        matirs.filter(
+          (beneficiaire) => beneficiaire.data.quantity >= searchValue
+        )
+      );
+    }
+  };
+
   return (
     <>
       {alertMessage && <div className="alert">{alertMessage}</div>}
 
-      <input
-        type="text"
-        placeholder="Search by article name"
-        onChange={handleSearch}
-        className="search-bar"
-      />
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Rechercher par nom d'article"
+          onChange={handleSearch}
+          className="search-bar"
+        />
+
+        <input
+          type="number"
+          placeholder="Rechercher par quantité"
+          onChange={handleQuantitySearch}
+          className="search-bar"
+        />
+      </div>
 
       {filteredMatirs.length > 0 ? (
         <table>
           <thead>
             <tr>
-              <th>nom de L'article</th>
-              <th>quantity</th>
-              <th>caracts</th>
+              <th>Nom de l'article</th>
+              <th>Quantité</th>
+              <th>Caractéristiques</th>
               <th></th>
             </tr>
           </thead>
@@ -121,7 +144,9 @@ function Materiales() {
                 <td>{matir.data.quantity}</td>
                 <td>
                   {Array.isArray(matir.data.caracts) ? (
-                    matir.data.caracts.map((car) => <span> {car} </span>)
+                    matir.data.caracts.map((car, ind) => (
+                      <span key={ind}> {car} </span>
+                    ))
                   ) : (
                     <span> {matir.data.caracts} </span>
                   )}
@@ -129,13 +154,13 @@ function Materiales() {
                 <td>
                   <img
                     src={deleteIcon}
-                    alt="delete Icon"
+                    alt="Icône de suppression"
                     className="icon"
                     onClick={() => handleDelete(matir.id)}
                   />
                   <img
                     src={editIcon}
-                    alt="edit Icon"
+                    alt="Icône d'édition"
                     className="icon"
                     onClick={() => handleEdit(matir)}
                   />
@@ -145,7 +170,7 @@ function Materiales() {
           </tbody>
         </table>
       ) : (
-        <p>There are no materiales registered.</p>
+        <Spinner />
       )}
 
       {editModalVisible && (
@@ -154,9 +179,9 @@ function Materiales() {
             <span className="close" onClick={() => setEditModalVisible(false)}>
               &times;
             </span>
-            <h2>Edit Material</h2>
+            <h2>Modifier le matériau</h2>
             <form onSubmit={handleUpdate}>
-              <label>Article Name</label>
+              <label>Nom de l'article</label>
               <input
                 type="text"
                 value={editedData.nomArticle}
@@ -164,15 +189,18 @@ function Materiales() {
                   setEditedData({ ...editedData, nomArticle: e.target.value })
                 }
               />
-              <label>Quantity</label>
+              <label>Quantité</label>
               <input
                 type="number"
                 value={editedData.quantity}
                 onChange={(e) =>
-                  setEditedData({ ...editedData, quantity: Number(e.target.value) })
+                  setEditedData({
+                    ...editedData,
+                    quantity: Number(e.target.value),
+                  })
                 }
               />
-              <label>Characteristics</label>
+              <label>Caractéristiques</label>
               <input
                 type="text"
                 value={editedData.caracts}
@@ -180,7 +208,7 @@ function Materiales() {
                   setEditedData({ ...editedData, caracts: e.target.value })
                 }
               />
-              <button type="submit">Update</button>
+              <button type="submit">Mettre à jour</button>
             </form>
           </div>
         </div>

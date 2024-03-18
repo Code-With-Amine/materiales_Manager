@@ -12,6 +12,7 @@ import "./Style/App.css";
 function App() {
   return (
     <BrowserRouter>
+    <div className="page-container">
     <BackHome />
       <Routes>
         <Route path="/" element={<MainComp />} />
@@ -22,6 +23,7 @@ function App() {
         <Route path="materiales" element={<Materiales />} />
         <Route path="Beneficiaires" element={<Beneficiaires />} />
       </Routes>
+      </div>
     </BrowserRouter>
   );
 }

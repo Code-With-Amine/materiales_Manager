@@ -11,6 +11,7 @@ import {
 import { db } from "../firebase";
 import deleteIcon from "../assets/bin.png";
 import editIcon from "../assets/edit.png";
+import Spinner from "./Spinner";
 
 interface School {
   id: string;
@@ -57,7 +58,7 @@ function Schools() {
     const taskDocRef = doc(db, "schools", id);
     try {
       await deleteDoc(taskDocRef);
-      setAlertMessage("School deleted successfully.");
+      setAlertMessage("École supprimée avec succès.");
       setTimeout(() => {
         setAlertMessage("");
       }, 3000); // Remove alert after 3 seconds
@@ -77,7 +78,7 @@ function Schools() {
     const schoolDocRef = doc(db, "schools", selectedSchool!.id);
     try {
       await updateDoc(schoolDocRef, editedData);
-      setAlertMessage("School updated successfully.");
+      setAlertMessage("École mise à jour avec succès.");
       setTimeout(() => {
         setAlertMessage("");
       }, 3000); // Remove alert after 3 seconds
@@ -114,11 +115,11 @@ function Schools() {
         <table>
           <thead>
             <tr>
-              <th>nom de L'ecole</th>
-              <th>Adress</th>
-              <th>Phone</th>
-              <th>email</th>
-              <th>ville</th>
+              <th>Nom de l'école</th>
+              <th>Adresse</th>
+              <th>Téléphone</th>
+              <th>Email</th>
+              <th>Ville</th>
               <th></th>
             </tr>
           </thead>
@@ -126,7 +127,9 @@ function Schools() {
             {filteredSchools.map((school) => (
               <tr className="table-row" key={school.id}>
                 <td>{school.data.schoolName}</td>
-                <td title={school.data.Adress}>{showFirstLetters(school.data.Adress)}</td>
+                <td title={school.data.Adress}>
+                  {showFirstLetters(school.data.Adress)}
+                </td>
                 <td>{school.data.phone}</td>
                 <td>{school.data.email}</td>
                 <td>{school.data.ville}</td>
@@ -149,7 +152,7 @@ function Schools() {
           </tbody>
         </table>
       ) : (
-        <p>There are no schools registered.</p>
+        <Spinner />
       )}
 
       {editModalVisible && (
@@ -200,7 +203,7 @@ function Schools() {
                   setEditedData({ ...editedData, ville: e.target.value })
                 }
               />
-              <button type="submit">Update</button>
+              <button type="submit"> Mettre à jour </button>
             </form>
           </div>
         </div>
