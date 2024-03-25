@@ -1,17 +1,51 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, Timestamp, getDocs } from "firebase/firestore";
 import Papa from "papaparse";
 
-function AddMatri() {
-  const [formData, setFormData] = useState({
+interface FormData {
+  nomArticle: string;
+  caracts: string;
+  quantity: number;
+  created: any; // Update the type as per your Timestamp type from Firebase
+  marche: string;
+}
+
+interface MarcheData {
+  id: string;
+  reference: string;
+}
+
+const AddMatri: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
     nomArticle: "",
     caracts: "",
     quantity: 0,
     created: Timestamp.now(),
+    marche: "", // Add marche field to the form data
   });
-  const [alertMessage, setAlertMessage] = useState("");
-  const [uploadError, setUploadError] = useState("");
+  const [alertMessage, setAlertMessage] = useState<string>("");
+  const [uploadError, setUploadError] = useState<string>("");
+  const [marches, setMarches] = useState<MarcheData[]>([]);
+  const [newFieldName, setNewFieldName] = useState<String>("");
+
+  useEffect(() => {
+    fetchMarches();
+  }, []);
+
+  const fetchMarches = async () => {
+    try {
+      const marcheCollection = collection(db, "marches");
+      const marcheSnapshot = await getDocs(marcheCollection);
+      const marcheList: MarcheData[] = marcheSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        reference: doc.data().reference,
+      }));
+      setMarches(marcheList);
+    } catch (error) {
+      console.error("Error fetching marches:", error);
+    }
+  };
 
   const handleUpload = async (event: any) => {
     const file = event.target.files[0];
@@ -34,6 +68,7 @@ function AddMatri() {
           nomArticle: row[0],
           caracts: row[1],
           quantity: parseInt(row[2], 10),
+          marche: row[3],
           created: Timestamp.now(),
         });
       }
@@ -43,7 +78,9 @@ function AddMatri() {
     }
   };
 
-  const handelChange = (e: any) => {
+  const handelChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -55,7 +92,7 @@ function AddMatri() {
     }, 5000); // Remove alert after 5 seconds
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       await addDoc(collection(db, "materiales"), formData);
@@ -66,7 +103,7 @@ function AddMatri() {
     }
   };
 
-  const addToDB = async (data: any) => {
+  const addToDB = async (data: FormData) => {
     try {
       await addDoc(collection(db, "materiales"), data);
       showAlert("Ajouté avec succès");
@@ -79,18 +116,50 @@ function AddMatri() {
   return (
     <form onSubmit={handleSubmit} className="AddForm">
       {alertMessage && <div className="alert">{alertMessage}</div>}
-      <div>
-        <label>Nom de l'article</label>
-        <input name="nomArticle" onChange={handelChange} />
+      <div className="d-flex">
+        <div>
+          <select name="marche" onChange={handelChange}>
+            <option value="">Choisir un marché</option>
+            {marches.map((marche) => (
+              <option key={marche.id} value={marche.reference}>
+                {marche.reference}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Nom de l'article</label>
+          <input name="nomArticle" onChange={handelChange} />
+        </div>
       </div>
-      <div>
-        <label>Caractéristique</label>
-        <input name="caracts" onChange={handelChange} />
+      <div className="d-flex">
+        <div>
+          <label>Caractéristique</label>
+          <input name="caracts" onChange={handelChange} />
+        </div>
+        <div>
+          <label>Quantité</label>
+          <input name="quantity" type="number" onChange={handelChange} />
+        </div>
       </div>
-      <div>
-        <label>Quantité</label>
-        <input name="quantity" type="number" onChange={handelChange} />
+      <button type="button" onClick={() => setNewFieldName("")}>
+        Ajouter une Column
+      </button>
+      <div className="addChemp">
+        <div>
+          <label>Le nom de nouveaux chemp</label>
+          <input
+            onChange={(e) => setNewFieldName(e.target.value)}
+            value={`${newFieldName}`}
+          />
+        </div>
+        <div>
+          <label>Le valeur de nouveaux Chemp </label>
+          <input name={`${newFieldName}`} onChange={handelChange} />
+        </div>
       </div>
+
       <div className="spearatingLine">
         {" "}
         <span></span> <p>OU</p> <span></span>{" "}
@@ -102,6 +171,6 @@ function AddMatri() {
       <button type="submit">Ajouter</button>
     </form>
   );
-}
+};
 
 export default AddMatri;

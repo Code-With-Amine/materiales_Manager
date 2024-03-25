@@ -1,17 +1,20 @@
-import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
   collection,
   query,
-  orderBy,
   onSnapshot,
   doc,
   deleteDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import deleteIcon from "../assets/bin.png";
 import editIcon from "../assets/edit.png";
+import add from "../assets/add.png";
 import Spinner from "./Spinner";
+import { useParams } from "react-router-dom";
+import ModelAddSchool from "./ModelAddSchool";
 
 interface Material {
   id: string;
@@ -22,7 +25,15 @@ interface Material {
   };
 }
 
+interface AddModel {
+  show: boolean;
+  marcherID: string;
+  idMat: string;
+  nomArticle: string;
+}
+
 function Materiales() {
+  const { MatID }: any = useParams();
   const [matirs, setMatirs] = useState<Material[]>([]);
   const [alertMessage, setAlertMessage] = useState<string>("");
   const [filteredMatirs, setFilteredMatirs] = useState<Material[]>([]);
@@ -30,6 +41,12 @@ function Materiales() {
     null
   );
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  const [addSchoolModel, setAddSchoolModel] = useState<AddModel>({
+    show: false,
+    marcherID: MatID,
+    idMat: "",
+    nomArticle: ''
+  });
   const [editedData, setEditedData] = useState<Material["data"]>({
     nomArticle: "",
     quantity: 0,
@@ -37,7 +54,7 @@ function Materiales() {
   });
 
   useEffect(() => {
-    const q = query(collection(db, "materiales"), orderBy("created", "desc"));
+    const q = query(collection(db, "materiales"), where("marche", "==", MatID));
     onSnapshot(q, (querySnapshot) => {
       setMatirs(
         querySnapshot.docs.map((doc) => ({
@@ -84,6 +101,8 @@ function Materiales() {
       }, 3000); // Supprimer l'alerte après 3 secondes
     } catch (err) {
       alert(err);
+    } finally {
+      setEditModalVisible(false);
     }
   };
 
@@ -105,6 +124,17 @@ function Materiales() {
         )
       );
     }
+  };
+
+  const handelShowingKey = () => {
+    let newArr: string[] = [];
+    filteredMatirs.forEach((matri) => {
+      const keysArr = Object.keys(matri.data);
+      if (newArr.length < keysArr.length) {
+        newArr = [...keysArr];
+      }
+    });
+    return newArr;
   };
 
   return (
@@ -131,90 +161,123 @@ function Materiales() {
         <table>
           <thead>
             <tr>
-              <th>Nom de l'article</th>
-              <th>Quantité</th>
-              <th>Caractéristiques</th>
+              {handelShowingKey().map(
+                (key, index) => key !== "created" && <th key={index}>{key}</th>
+              )}
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {filteredMatirs.map((matir) => (
-              <tr className="table-row" key={matir.id}>
-                <td>{matir.data.nomArticle}</td>
-                <td>{matir.data.quantity}</td>
-                <td>
-                  {Array.isArray(matir.data.caracts) ? (
-                    matir.data.caracts.map((car, ind) => (
-                      <span key={ind}> {car} </span>
-                    ))
-                  ) : (
-                    <span> {matir.data.caracts} </span>
-                  )}
-                </td>
-                <td>
-                  <img
-                    src={deleteIcon}
-                    alt="Icône de suppression"
-                    className="icon"
-                    onClick={() => handleDelete(matir.id)}
-                  />
-                  <img
-                    src={editIcon}
-                    alt="Icône d'édition"
-                    className="icon"
-                    onClick={() => handleEdit(matir)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <Spinner />
-      )}
+                {filteredMatirs.map((matir, index) => (
+                  <tr className="table-row" key={index}>
+                    {handelShowingKey().map((value: string) => (
+                      <>
+                        {typeof matir.data[value as keyof typeof matir.data] !==
+                          "object" && (
+                          <td>
+                            {matir.data[value as keyof typeof matir.data] ? (
+                              matir.data[value as keyof typeof matir.data]
+                            ) : (
+                              <>unset</>
+                            )}
+                          </td>
+                        )}
+                      </>
+                    ))}
+                    <td key={index}>
+                      <img
+                        src={deleteIcon}
+                        alt="Icône de suppression"
+                        className="icon"
+                        onClick={() => handleDelete(matir.id)}
+                      />
+                      <img
+                        src={editIcon}
+                        alt="Icône d'édition"
+                        className="icon"
+                        onClick={() => handleEdit(matir)}
+                      />
+                      <img
+                        src={add}
+                        alt="Icône d'édition"
+                        className="icon"
+                        onClick={() =>
+                          setAddSchoolModel((prev) => ({
+                            ...prev,
+                            show: true,
+                            nomArticle: matir.data.nomArticle,
+                            idMat: matir.id
+                          }))
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <Spinner />
+          )}
 
-      {editModalVisible && (
-        <div className="modal">
-          <div className="modal-content">
-            <span className="close" onClick={() => setEditModalVisible(false)}>
-              &times;
-            </span>
-            <h2>Modifier le matériau</h2>
-            <form onSubmit={handleUpdate}>
-              <label>Nom de l'article</label>
-              <input
-                type="text"
-                value={editedData.nomArticle}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, nomArticle: e.target.value })
-                }
-              />
-              <label>Quantité</label>
-              <input
-                type="number"
-                value={editedData.quantity}
-                onChange={(e) =>
-                  setEditedData({
-                    ...editedData,
-                    quantity: Number(e.target.value),
-                  })
-                }
-              />
-              <label>Caractéristiques</label>
-              <input
-                type="text"
-                value={editedData.caracts}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, caracts: e.target.value })
-                }
-              />
-              <button type="submit">Mettre à jour</button>
-            </form>
+        {addSchoolModel.show && (
+          <ModelAddSchool
+            handelModel={setAddSchoolModel}
+            addSchoolModel={addSchoolModel}
+          />
+        )}
+
+        {editModalVisible && (
+          <div className="modal">
+            <div className="modal-content">
+              <span
+                className="close"
+                onClick={() => setEditModalVisible(false)}
+              >
+                &times;
+              </span>
+              <h2>Modifier le matériau</h2>
+              <form onSubmit={handleUpdate}>
+                <label>Nom de l'article</label>
+                <input
+                  type="text"
+                  value={editedData.nomArticle}
+                  onChange={(e) =>
+                    setEditedData({
+                      ...editedData,
+                      nomArticle: e.target.value,
+                    })
+                  }
+                />
+                <label>Quantité</label>
+                <input
+                  type="number"
+                  value={editedData.quantity}
+                  onChange={(e) =>
+                    setEditedData({
+                      ...editedData,
+                      quantity: Number(e.target.value),
+                    })
+                  }
+                />
+                <label>Caractéristiques</label>
+                <input
+                  type="text"
+                  value={editedData.caracts}
+                  onChange={(e) =>
+                    setEditedData({
+                      ...editedData,
+                      caracts: e.target.value,
+                    })
+                  }
+                />
+                <button type="submit">Mettre à jour</button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </>
-  );
-}
+        )}
+      </>
+    );
+  }
 
 export default Materiales;
+

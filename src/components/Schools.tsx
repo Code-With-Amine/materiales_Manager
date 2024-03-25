@@ -24,7 +24,13 @@ interface School {
   };
 }
 
+interface Material {
+  id: string;
+  nomArticle: string;
+}
+
 function Schools() {
+  const [matirs, setMatirs] = useState<Material[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [alertMessage, setAlertMessage] = useState<string>("");
   const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
@@ -53,6 +59,28 @@ function Schools() {
 
     fillSchools();
   }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, "materiales"));
+    onSnapshot(q, (querySnapshot) => {
+      setMatirs(
+        querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          nomArticle: doc.data().nomArticle,
+        }))
+      );
+    });
+  }, []);
+
+  const handelShowMatirale = (matirId : string) => {
+      let nomArticle;
+      matirs.forEach(matir => {
+        if(matir.id == matirId){
+          return nomArticle = matir.nomArticle
+        }
+      });
+      return nomArticle; 
+  }
 
   const handleDelete = async (id: string) => {
     const taskDocRef = doc(db, "schools", id);
@@ -85,6 +113,9 @@ function Schools() {
     } catch (err) {
       alert(err);
     }
+    finally {
+      setEditModalVisible(false)
+    }
   };
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
@@ -96,8 +127,20 @@ function Schools() {
     );
   };
 
-  const showFirstLetters = (word: string) => {
-    return `${word.substring(0, 20)} ...`;
+  const handelShowingKey = () => {
+    let newArr: string[] = [];
+    filteredSchools.forEach((school) => {
+      const keysArr = Object.keys(school.data);
+      if (newArr.length < keysArr.length) {
+        newArr = [...keysArr];
+      }
+    });
+    return newArr;
+  };
+
+  const handelEditedDataChange = (e: any) => {
+    const {name, value} = e.target;
+    setEditedData( (prev) => ({ ...prev, [name]: value }))
   };
 
   return (
@@ -115,24 +158,29 @@ function Schools() {
         <table>
           <thead>
             <tr>
-              <th>Nom de l'école</th>
-              <th>Adresse</th>
-              <th>Téléphone</th>
-              <th>Email</th>
-              <th>Ville</th>
+              {handelShowingKey().map(
+                (key, index) => key !== "created" && <th key={index}>{key}</th>
+              )}
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {filteredSchools.map((school) => (
-              <tr className="table-row" key={school.id}>
-                <td>{school.data.schoolName}</td>
-                <td title={school.data.Adress}>
-                  {showFirstLetters(school.data.Adress)}
-                </td>
-                <td>{school.data.phone}</td>
-                <td>{school.data.email}</td>
-                <td>{school.data.ville}</td>
+            {filteredSchools.map((school, index) => (
+              <tr className="table-row" key={index}>
+                {handelShowingKey().map((value: string) => (
+                  <>
+                    {typeof school.data[value as keyof typeof school.data] !==
+                      "object" && (
+                      <td>
+                        {school.data[value as keyof typeof school.data] ? (
+                          value === 'idMat' ? handelShowMatirale(school.data[value as keyof typeof school.data]) :  school.data[value as keyof typeof school.data] 
+                        ) : (
+                          <>unset</>
+                        )}
+                      </td>
+                    )}
+                  </>
+                ))}
                 <td>
                   <img
                     src={deleteIcon}
@@ -163,46 +211,11 @@ function Schools() {
             </span>
             <h2>Edit School</h2>
             <form onSubmit={handleUpdate}>
-              <label>School Name</label>
-              <input
-                type="text"
-                value={editedData.schoolName}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, schoolName: e.target.value })
-                }
-              />
-              <label>Address</label>
-              <input
-                type="text"
-                value={editedData.Adress}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, Adress: e.target.value })
-                }
-              />
-              <label>Phone</label>
-              <input
-                type="text"
-                value={editedData.phone}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, phone: e.target.value })
-                }
-              />
-              <label>Email</label>
-              <input
-                type="email"
-                value={editedData.email}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, email: e.target.value })
-                }
-              />
-              <label>Ville</label>
-              <input
-                type="text"
-                value={editedData.ville}
-                onChange={(e) =>
-                  setEditedData({ ...editedData, ville: e.target.value })
-                }
-              />
+              {
+                Object.keys(editedData).map((data, index) => (
+                   data !== 'idMat' && data !=='marcherID' && data !=='created' && <input key={index} placeholder={`New value of ${data}`} name={data} onChange={handelEditedDataChange}/>
+                  ) )
+              }
               <button type="submit"> Mettre à jour </button>
             </form>
           </div>

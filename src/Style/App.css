@@ -6,7 +6,19 @@ body {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  position: relative;
+  /*position: relative;*/
+  overflow: scroll;
+
+}
+.d-flex{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.addChemp{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  width: 100%;
+
 }
 /*.backHome {
   position: absolute;
@@ -14,10 +26,11 @@ body {
   left: 20px;
   margin: 30px;
 } */
-.page-container{
-    display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: 22px;
+.page-container {
+  overflow: scroll;
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 22px;
 }
 .main-container {
   display: flex;
@@ -52,9 +65,17 @@ body {
   text-decoration: none;
   color: white;
 }
-
+.item-link select {
+  width: 50%;
+  border-bottom: none;
+}
+.AddForm {
+  overflow: scroll;
+}
 .AddForm div {
   padding: 12px;
+  border-bottom: none !important;
+  font-weight: bold;
 }
 .AddForm div label {
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
@@ -66,7 +87,6 @@ select {
   outline: none;
   background-color: transparent;
   border-bottom: 3px solid rgb(255, 255, 255);
-  width: 100%;
   padding: 12px;
   color: white;
   font-family: "Courier New", Courier, monospace;
@@ -89,7 +109,7 @@ select {
   -ms-border-radius: 20px;
   -o-border-radius: 20px;
 }
-.AddForm input[type=file]{
+.AddForm input[type="file"] {
   border: none;
 }
 
@@ -317,14 +337,14 @@ button[type="submit"]:hover {
   }
 }
 
-.spearatingLine{
+.spearatingLine {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   color: #ffaa00;
 }
-.spearatingLine span{
+.spearatingLine span {
   display: block;
   height: 2px;
   background-color: #ffaa00;

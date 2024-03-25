@@ -1,28 +1,81 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "../firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
 import Papa from "papaparse";
 
 interface FormData {
+  ref: string;
   schoolName: string;
-  Adress: string;
   email: string;
   phone: string;
   ville: string;
+  marcherID: string | null;
+  idMat: string | null;
+  quantity: number | null;
   created: Date | Timestamp;
+}
+
+interface Marches {
+  id: string;
+  intitule: string;
+  reference: string;
+}
+interface Materiaux {
+  id: string;
+  nomArticle: string;
 }
 
 function AddScholl() {
   const [formData, setFormData] = useState<FormData>({
+    ref: "",
     schoolName: "",
-    Adress: "",
     email: "",
     phone: "",
     ville: "",
+    quantity: null,
+    marcherID: null,
+    idMat: null,
     created: Timestamp.now(),
   });
+  const [marches, setMarche] = useState<Marches[]>([]);
+  const [matirs, setMatir] = useState<Materiaux[]>([]);
   const [alertMessage, setAlertMessage] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
+  const [newFieldName, setNewFieldName] = useState<String>("");
+
+  useEffect(() => {
+    const q = query(collection(db, "materiales"), orderBy("created", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      setMatir(
+        querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          nomArticle: doc.data().nomArticle,
+        }))
+      );
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, "marches"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      setMarche(
+        querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          reference: doc.data().reference,
+          intitule: doc.data().intitule,
+        }))
+      );
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleUpload = async (event: any) => {
     const file = event.target.files[0];
@@ -55,7 +108,7 @@ function AddScholl() {
     }
   };
 
-  const handelChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handelChange = (e: any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -70,7 +123,7 @@ function AddScholl() {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // check if all fields are filled correctlly
-    let err = false;
+    /*let err = false;
     const values = Object.values(formData);
     values.forEach((value) => {
       if (value === "" || value == undefined || value == null) {
@@ -79,6 +132,7 @@ function AddScholl() {
       }
     });
     if (err) return;
+    */
     addToDB(formData);
   };
 
@@ -95,26 +149,74 @@ function AddScholl() {
   return (
     <form onSubmit={handleSubmit} className="AddForm">
       {alertMessage && <div className="alert">{alertMessage}</div>}
-      <div>
-        <label>Nom de l'école</label>
-        <input name="schoolName" onChange={handelChange} />
+      <div className="d-flex">
+        <div>
+          <select name="marcherID" onChange={handelChange}>
+            <option value="">Choisir un marché</option>
+            {marches.map((marche) => (
+              <option key={marche.id} value={marche.reference}>
+                {marche.intitule} - {marche.reference}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <select name="idMat" onChange={handelChange}>
+            <option value="">Choisir un marché</option>
+            {matirs.map((matir) => (
+              <option key={matir.id} value={matir.id}>
+                {matir.nomArticle}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+
       <div>
-        <label>Adresse</label>
-        <input name="Adress" onChange={handelChange} />
+        <label>Reference de l'école</label>
+        <input name="ref" onChange={handelChange} />
       </div>
-      <div>
-        <label>Email</label>
-        <input name="email" type="email" onChange={handelChange} />
+
+      <div className="d-flex">
+        <div>
+          <label>Nom de l'école</label>
+          <input name="schoolName" onChange={handelChange} />
+        </div>
+        <div>
+          <label>Téléphone</label>
+          <input name="phone" onChange={handelChange} />
+        </div>
       </div>
-      <div>
-        <label>Téléphone</label>
-        <input name="phone" onChange={handelChange} />
+
+      <div className="d-flex">
+        <div>
+          <label>Ville</label>
+          <input name="ville" onChange={handelChange} />
+        </div>
+        <div>
+          <label>quantity</label>
+          <input name="quantity" type="number" onChange={handelChange} />
+        </div>
       </div>
-      <div>
-        <label>Ville</label>
-        <input name="ville" onChange={handelChange} />
+
+      <button type="button" onClick={() => setNewFieldName("")}>
+        Ajouter une Column
+      </button>
+      <div className="addChemp">
+        <div>
+          <label>Le nom de nouveaux chemp</label>
+          <input
+            onChange={(e) => setNewFieldName(e.target.value)}
+            value={`${newFieldName}`}
+          />
+        </div>
+        <div>
+          <label>Le valeur de nouveaux Chemp </label>
+          <input name={`${newFieldName}`} onChange={handelChange} />
+        </div>
       </div>
+
       <div className="spearatingLine">
         {" "}
         <span></span> <p>OU</p> <span></span>{" "}
