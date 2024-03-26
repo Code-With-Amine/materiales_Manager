@@ -2,10 +2,10 @@ import { useState, FormEvent, useEffect } from "react";
 import {
   collection,
   query,
-  orderBy,
   onSnapshot,
   addDoc,
   Timestamp,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import Papa from "papaparse";
@@ -51,19 +51,6 @@ function AddScholl() {
   const [newFieldName, setNewFieldName] = useState<String>("");
 
   useEffect(() => {
-    const q = query(collection(db, "materiales"), orderBy("created", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      setMatir(
-        querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          nomArticle: doc.data().nomArticle,
-        }))
-      );
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
     const q = query(collection(db, "marches"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       setMarche(
@@ -76,6 +63,24 @@ function AddScholl() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (formData.marcherID !== "") {
+      const q = query(
+        collection(db, "materiales"),
+        where("marche", "==", formData.marcherID)
+      );
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        setMatir(
+          querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            nomArticle: doc.data().nomArticle,
+          }))
+        );
+      });
+      return () => unsubscribe();
+    }
+  }, [formData.marcherID]);
 
   const handleUpload = async (event: any) => {
     const file = event.target.files[0];
@@ -110,7 +115,9 @@ function AddScholl() {
 
   const handelChange = (e: any) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    name !== "" &&
+      value !== "" &&
+      setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const showAlert = (mesg: string) => {
@@ -151,7 +158,7 @@ function AddScholl() {
       {alertMessage && <div className="alert">{alertMessage}</div>}
       <div className="d-flex">
         <div>
-          <select name="marcherID" onChange={handelChange}>
+          <select name="marcherID" onChange={handelChange} required>
             <option value="">Choisir un marché</option>
             {marches.map((marche) => (
               <option key={marche.id} value={marche.reference}>
@@ -162,7 +169,7 @@ function AddScholl() {
         </div>
 
         <div>
-          <select name="idMat" onChange={handelChange}>
+          <select name="idMat" onChange={handelChange} required>
             <option value="">Choisir un marché</option>
             {matirs.map((matir) => (
               <option key={matir.id} value={matir.id}>
@@ -175,13 +182,13 @@ function AddScholl() {
 
       <div>
         <label>Reference de l'école</label>
-        <input name="ref" onChange={handelChange} />
+        <input name="ref" onChange={handelChange} required />
       </div>
 
       <div className="d-flex">
         <div>
           <label>Nom de l'école</label>
-          <input name="schoolName" onChange={handelChange} />
+          <input name="schoolName" onChange={handelChange} required />
         </div>
         <div>
           <label>Téléphone</label>
@@ -196,7 +203,12 @@ function AddScholl() {
         </div>
         <div>
           <label>quantity</label>
-          <input name="quantity" type="number" onChange={handelChange} />
+          <input
+            name="quantity"
+            type="number"
+            onChange={handelChange}
+            required
+          />
         </div>
       </div>
 

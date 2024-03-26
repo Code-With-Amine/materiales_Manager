@@ -5,12 +5,16 @@ import Papa from "papaparse";
 
 interface FormData {
   reference: string;
+  intitule: string;
+  provinciale: string;
   created: any; // Update the type as per your Timestamp type from Firebase
 }
 
 const AddMarches: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     reference: "",
+    intitule: "",
+    provinciale: "",
     created: Timestamp.now(),
   });
   const [alertMessage, setAlertMessage] = useState<string>("");
@@ -33,7 +37,12 @@ const AddMarches: React.FC = () => {
       });
 
       for (const row of csvData.slice(1)) {
-        await addToDB({ reference: row[0], created: Timestamp.now() });
+        await addToDB({
+          reference: row[0],
+          intitule: row[1],
+          provinciale: row[2],
+          created: Timestamp.now(),
+        });
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -43,7 +52,9 @@ const AddMarches: React.FC = () => {
 
   const handelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    name !== "" &&
+      value !== "" &&
+      setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const showAlert = (message: string) => {
@@ -77,9 +88,17 @@ const AddMarches: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="AddForm">
       {alertMessage && <div className="alert">{alertMessage}</div>}
-      <div>
+      <div className="d-flext-block">
         <label>Reference</label>
         <input name="reference" onChange={handelChange} />
+      </div>
+      <div className="d-flext-block">
+        <label>intitule</label>
+        <input name="intitule" onChange={handelChange} />
+      </div>
+      <div className="d-flext-block">
+        <label>provinciale</label>
+        <input name="provinciale" onChange={handelChange} />
       </div>
       <div>
         <input type="file" accept=".csv" onChange={handleUpload} />

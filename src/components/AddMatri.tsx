@@ -116,7 +116,7 @@ const AddMatri: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="AddForm">
       {alertMessage && <div className="alert">{alertMessage}</div>}
-      <div className="d-flex">
+      <div className="addChemp" style={{display:"flex", alignItems: "center"}}>
         <div>
           <select name="marche" onChange={handelChange}>
             <option value="">Choisir un marché</option>
@@ -128,7 +128,7 @@ const AddMatri: React.FC = () => {
           </select>
         </div>
 
-        <div>
+        <div className="d-flext-block">
           <label>Nom de l'article</label>
           <input name="nomArticle" onChange={handelChange} />
         </div>

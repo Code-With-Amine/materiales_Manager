@@ -72,15 +72,15 @@ function Schools() {
     });
   }, []);
 
-  const handelShowMatirale = (matirId : string) => {
-      let nomArticle;
-      matirs.forEach(matir => {
-        if(matir.id == matirId){
-          return nomArticle = matir.nomArticle
-        }
-      });
-      return nomArticle; 
-  }
+  const handelShowMatirale = (matirId: string) => {
+    let nomArticle;
+    matirs.forEach((matir) => {
+      if (matir.id == matirId) {
+        return (nomArticle = matir.nomArticle);
+      }
+    });
+    return nomArticle;
+  };
 
   const handleDelete = async (id: string) => {
     const taskDocRef = doc(db, "schools", id);
@@ -112,9 +112,8 @@ function Schools() {
       }, 3000); // Remove alert after 3 seconds
     } catch (err) {
       alert(err);
-    }
-    finally {
-      setEditModalVisible(false)
+    } finally {
+      setEditModalVisible(false);
     }
   };
 
@@ -122,7 +121,11 @@ function Schools() {
     const searchTerm = e.target.value.toLowerCase();
     setFilteredSchools(
       schools.filter((school) =>
-        school.data.schoolName.toLowerCase().includes(searchTerm.toLowerCase())
+        Object.values(school.data).some(
+          (value) =>
+            typeof value === "string" &&
+            value.toLowerCase().includes(searchTerm)
+        )
       )
     );
   };
@@ -135,12 +138,12 @@ function Schools() {
         newArr = [...keysArr];
       }
     });
-    return newArr;
+    return newArr.filter((val) => val !== "created");
   };
 
   const handelEditedDataChange = (e: any) => {
-    const {name, value} = e.target;
-    setEditedData( (prev) => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    setEditedData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -167,19 +170,25 @@ function Schools() {
           <tbody>
             {filteredSchools.map((school, index) => (
               <tr className="table-row" key={index}>
-                {handelShowingKey().map((value: string) => (
-                  <>
+                {handelShowingKey().map((value: string, key) => (
+                  <td key={key}>
                     {typeof school.data[value as keyof typeof school.data] !==
                       "object" && (
-                      <td>
+                      <>
                         {school.data[value as keyof typeof school.data] ? (
-                          value === 'idMat' ? handelShowMatirale(school.data[value as keyof typeof school.data]) :  school.data[value as keyof typeof school.data] 
+                          value === "idMat" ? (
+                            handelShowMatirale(
+                              school.data[value as keyof typeof school.data]
+                            )
+                          ) : (
+                            school.data[value as keyof typeof school.data]
+                          )
                         ) : (
                           <>unset</>
                         )}
-                      </td>
+                      </>
                     )}
-                  </>
+                  </td>
                 ))}
                 <td>
                   <img
@@ -211,11 +220,19 @@ function Schools() {
             </span>
             <h2>Edit School</h2>
             <form onSubmit={handleUpdate}>
-              {
-                Object.keys(editedData).map((data, index) => (
-                   data !== 'idMat' && data !=='marcherID' && data !=='created' && <input key={index} placeholder={`New value of ${data}`} name={data} onChange={handelEditedDataChange}/>
-                  ) )
-              }
+              {handelShowingKey().map(
+                (data, index) =>
+                  data !== "idMat" &&
+                  data !== "marcherID" &&
+                  data !== "created" && (
+                    <input
+                      key={index}
+                      placeholder={`New value of ${data}`}
+                      name={data}
+                      onChange={handelEditedDataChange}
+                    />
+                  )
+              )}
               <button type="submit"> Mettre à jour </button>
             </form>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, updateDoc, doc, getDoc, addDoc } from "firebase/firestore";
+import { collection, doc, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 interface AddModel {
@@ -13,6 +13,13 @@ interface FormData {
   schoolRef: string;
   quantity: number;
   ref: string;
+  schoolName: string;
+}
+
+interface School {
+  id: string;
+  name: string;
+  ref: string;
 }
 
 interface ModelAddSchoolProps {
@@ -24,56 +31,93 @@ const ModelAddSchool: React.FC<ModelAddSchoolProps> = ({
   handelModel,
   addSchoolModel,
 }) => {
-  const [newFieldName, setNewFieldName] = useState<String>("");
+  const [existingSchools, setExistingSchools] = useState<School[]>([]);
   const [formData, setFormData] = useState<FormData>({
     schoolRef: "",
     quantity: 0,
     ref: "",
+    schoolName: "",
   });
   const [alertMessage, setAlertMessage] = useState<string>("");
+
+  useEffect(() => {
+    const fetchExistingSchools = async () => {
+      const schoolsCollection = collection(db, "schools");
+      const querySnapshot = await getDocs(schoolsCollection);
+      const schoolsList: School[] = [];
+      querySnapshot.forEach((doc) => {
+        schoolsList.push({
+          id: doc.id,
+          name: doc.data().schoolName,
+          ref: doc.data().ref,
+        });
+      });
+      setExistingSchools(schoolsList);
+    };
+
+    fetchExistingSchools();
+  }, []);
 
   const handelChange = (
     e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "schoolRef") {
+      const selectedSchool = existingSchools.find(
+        (school) => school.id === value
+      );
+      if (selectedSchool) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          ref: selectedSchool.ref,
+          schoolName: selectedSchool.name,
+        }));
+      }
+    } else {
+      name !== "" &&
+        value !== "" &&
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handelSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { schoolRef, quantity } = formData;
-    if (schoolRef && quantity > 0) {
-      const matiralekDocRef = doc(db, "materiales", addSchoolModel.idMat);
+    try {
+      if (
+        formData.schoolRef !== "" &&
+        formData.quantity > 0 &&
+        addSchoolModel.idMat !== "" &&
+        addSchoolModel.marcherID !== ""
+      ) {
+        const newSchoolData = {
+          schoolName: formData.schoolName,
+          ref: formData.ref,
+          quantity: formData.quantity,
+          idMat: addSchoolModel.idMat,
+          marcherID: addSchoolModel.marcherID,
+        };
+        await addDoc(collection(db, "schools"), newSchoolData);
 
-      try {
-        const matiralekDocSnap = await getDoc(matiralekDocRef);
-        const oldQuantity = matiralekDocSnap.data()?.quantity || 0;
-
-        if (Number(quantity) <= Number(oldQuantity)) {
-          await updateDoc(matiralekDocRef, {
-            quantity: oldQuantity - quantity,
-          });
-        } else {
-          const newSchoolData = {
-            schoolName: formData.schoolRef,
-            quantity: formData.quantity,
-            idMat: addSchoolModel.idMat,
-            marcherID: addSchoolModel.marcherID,
-            ref: formData.ref,
-          };
-          await addDoc(collection(db, "schools"), newSchoolData);
-          setAlertMessage("Nouvelle école ajoutée avec succès");
-        }
-        setTimeout(() => {
-          setAlertMessage("");
-        }, 3000);
-      } catch (err: any) {
-        setAlertMessage(err);
+        setAlertMessage("École ajoutée avec succès");
+      } else {
+        setAlertMessage(
+          "Veuillez sélectionner une école et spécifier une quantité valide"
+        );
       }
-    } else {
-      setAlertMessage(
-        "Veuillez sélectionner une école et spécifier une quantité valide"
-      );
+
+      setTimeout(() => {
+        setAlertMessage("");
+      }, 3000);
+    } catch (err: any) {
+      setAlertMessage(err);
+    } finally {
+      handelModel({
+        show: true,
+        marcherID: addSchoolModel.marcherID,
+        idMat: addSchoolModel.idMat,
+        nomArticle: addSchoolModel.nomArticle,
+      });
     }
   };
 
@@ -87,23 +131,30 @@ const ModelAddSchool: React.FC<ModelAddSchoolProps> = ({
               show: false,
               marcherID: addSchoolModel.marcherID,
               idMat: addSchoolModel.idMat,
-              nomArticle: "",
+              nomArticle: addSchoolModel.nomArticle,
             })
           }
         >
           &times;
         </span>
-        <h2>Modifier le matériau</h2>
+        <h2>Ajouter une École</h2>
         {alertMessage && <div className="alert">{alertMessage}</div>}
         <form onSubmit={handelSubmit}>
-          <label>Numero de Marcher</label>
+          <label>Numéro de Marché</label>
           <input value={addSchoolModel.marcherID} disabled={true} />
           <label>Nom de l'article</label>
-          <input value={addSchoolModel.nomArticle} disabled={true} />{" "}
-          <label>Nom de Etablisment</label>
-          <input name="schoolRef" onChange={handelChange} required />
-          <label>reference de Etablisment</label>
-          <input name="ref" onChange={handelChange} required />
+          <input value={addSchoolModel.nomArticle} disabled={true} />
+          <label>Sélectionner une École</label>
+          <select name="schoolRef" onChange={handelChange} required>
+            <option value="">Sélectionner une école...</option>
+            {existingSchools.map((school) => (
+              <option key={school.id} value={school.id}>
+                {school.name} - {school.ref}
+              </option>
+            ))}
+          </select>
+          <label>Référence de l'École</label>
+          <input name="ref" value={formData.ref} disabled={true} required />
           <label>Quantité</label>
           <input
             type="number"
@@ -111,23 +162,8 @@ const ModelAddSchool: React.FC<ModelAddSchoolProps> = ({
             onChange={handelChange}
             required
           />
-          <button type="button" onClick={() => setNewFieldName("")}>
-            Ajouter une Column
-          </button>
-          <div className="addChemp">
-            <div>
-              <label>Le nom de nouveaux chemp</label>
-              <input
-                onChange={(e) => setNewFieldName(e.target.value)}
-                value={`${newFieldName}`}
-              />
-            </div>
-            <div>
-              <label>Le valeur de nouveaux Chemp </label>
-              <input name={`${newFieldName}`} onChange={handelChange} />
-            </div>
-          </div>
-          <button type="submit">Mettre à jour</button>
+
+          <button type="submit">Ajouter</button>
         </form>
       </div>
     </div>
