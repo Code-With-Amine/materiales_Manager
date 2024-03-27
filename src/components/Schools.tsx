@@ -2,7 +2,6 @@ import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
   collection,
   query,
-  orderBy,
   onSnapshot,
   doc,
   deleteDoc,
@@ -46,7 +45,7 @@ function Schools() {
 
   useEffect(() => {
     const fillSchools = () => {
-      const q = query(collection(db, "schools"), orderBy("schoolName", "desc"));
+      const q = query(collection(db, "schools"));
       onSnapshot(q, (querySnapshot) => {
         const fetchedSchools = querySnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -146,6 +145,24 @@ function Schools() {
     setEditedData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleDownloadCSV = () => {
+    const csvContent = schools.map((school) =>
+      Object.values(school.data).join(",")
+    );
+
+    const csvHeader = Object.keys(schools[0].data).join(",");
+
+    const csv = [csvHeader, ...csvContent].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "schools.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       {alertMessage && <div className="alert">{alertMessage}</div>}
@@ -207,6 +224,9 @@ function Schools() {
               </tr>
             ))}
           </tbody>
+          <button onClick={handleDownloadCSV} className="download-button">
+            Télécharger en CSV
+          </button>
         </table>
       ) : (
         <Spinner />

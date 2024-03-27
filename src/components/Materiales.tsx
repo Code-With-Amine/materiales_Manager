@@ -45,7 +45,7 @@ function Materiales() {
     show: false,
     marcherID: MatID,
     idMat: "",
-    nomArticle: ''
+    nomArticle: "",
   });
   const [editedData, setEditedData] = useState<Material["data"]>({
     nomArticle: "",
@@ -106,6 +106,25 @@ function Materiales() {
     }
   };
 
+  const handleDownloadCSV = () => {
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      "Nom de l'article,Quantité,Caractéristiques\n" +
+      filteredMatirs
+        .map(
+          (matir) =>
+            `${matir.data.nomArticle},${matir.data.quantity},${matir.data.caracts}`
+        )
+        .join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "materiales.csv");
+    document.body.appendChild(link);
+    link.click();
+  };
+
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     const searchTerm = e.target.value.toLowerCase();
     setFilteredMatirs(
@@ -158,126 +177,128 @@ function Materiales() {
       </div>
 
       {filteredMatirs.length > 0 ? (
-        <table>
-          <thead>
-            <tr>
-              {handelShowingKey().map(
-                (key, index) => key !== "created" && <th key={index}>{key}</th>
-              )}
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-                {filteredMatirs.map((matir, index) => (
-                  <tr className="table-row" key={index}>
-                    {handelShowingKey().map((value: string) => (
-                      <>
-                        {typeof matir.data[value as keyof typeof matir.data] !==
-                          "object" && (
-                          <td>
-                            {matir.data[value as keyof typeof matir.data] ? (
-                              matir.data[value as keyof typeof matir.data]
-                            ) : (
-                              <>unset</>
-                            )}
-                          </td>
-                        )}
-                      </>
-                    ))}
-                    <td key={index}>
-                      <img
-                        src={deleteIcon}
-                        alt="Icône de suppression"
-                        className="icon"
-                        onClick={() => handleDelete(matir.id)}
-                      />
-                      <img
-                        src={editIcon}
-                        alt="Icône d'édition"
-                        className="icon"
-                        onClick={() => handleEdit(matir)}
-                      />
-                      <img
-                        src={add}
-                        alt="Icône d'édition"
-                        className="icon"
-                        onClick={() =>
-                          setAddSchoolModel((prev) => ({
-                            ...prev,
-                            show: true,
-                            nomArticle: matir.data.nomArticle,
-                            idMat: matir.id
-                          }))
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <Spinner />
-          )}
+        <>
+          <table>
+            <thead>
+              <tr>
+                {handelShowingKey().map(
+                  (key, index) =>
+                    key !== "created" && <th key={index}>{key}</th>
+                )}
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMatirs.map((matir, index) => (
+                <tr className="table-row" key={index}>
+                  {handelShowingKey().map((value: string) => (
+                    <>
+                      {typeof matir.data[value as keyof typeof matir.data] !==
+                        "object" && (
+                        <td>
+                          {matir.data[value as keyof typeof matir.data] ? (
+                            matir.data[value as keyof typeof matir.data]
+                          ) : (
+                            <>unset</>
+                          )}
+                        </td>
+                      )}
+                    </>
+                  ))}
+                  <td key={index}>
+                    <img
+                      src={deleteIcon}
+                      alt="Icône de suppression"
+                      className="icon"
+                      onClick={() => handleDelete(matir.id)}
+                    />
+                    <img
+                      src={editIcon}
+                      alt="Icône d'édition"
+                      className="icon"
+                      onClick={() => handleEdit(matir)}
+                    />
+                    <img
+                      src={add}
+                      alt="Icône d'édition"
+                      className="icon"
+                      onClick={() =>
+                        setAddSchoolModel((prev) => ({
+                          ...prev,
+                          show: true,
+                          nomArticle: matir.data.nomArticle,
+                          idMat: matir.id,
+                        }))
+                      }
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button onClick={handleDownloadCSV} className="download-button">
+            Télécharger en CSV
+          </button>
+        </>
+      ) : (
+        <Spinner />
+      )}
 
-        {addSchoolModel.show && (
-          <ModelAddSchool
-            handelModel={setAddSchoolModel}
-            addSchoolModel={addSchoolModel}
-          />
-        )}
+      {addSchoolModel.show && (
+        <ModelAddSchool
+          handelModel={setAddSchoolModel}
+          addSchoolModel={addSchoolModel}
+        />
+      )}
 
-        {editModalVisible && (
-          <div className="modal">
-            <div className="modal-content">
-              <span
-                className="close"
-                onClick={() => setEditModalVisible(false)}
-              >
-                &times;
-              </span>
-              <h2>Modifier le matériau</h2>
-              <form onSubmit={handleUpdate}>
-                <label>Nom de l'article</label>
-                <input
-                  type="text"
-                  value={editedData.nomArticle}
-                  onChange={(e) =>
-                    setEditedData({
-                      ...editedData,
-                      nomArticle: e.target.value,
-                    })
-                  }
-                />
-                <label>Quantité</label>
-                <input
-                  type="number"
-                  value={editedData.quantity}
-                  onChange={(e) =>
-                    setEditedData({
-                      ...editedData,
-                      quantity: Number(e.target.value),
-                    })
-                  }
-                />
-                <label>Caractéristiques</label>
-                <input
-                  type="text"
-                  value={editedData.caracts}
-                  onChange={(e) =>
-                    setEditedData({
-                      ...editedData,
-                      caracts: e.target.value,
-                    })
-                  }
-                />
-                <button type="submit">Mettre à jour</button>
-              </form>
-            </div>
+      {editModalVisible && (
+        <div className="modal">
+          <div className="modal-content">
+            <span className="close" onClick={() => setEditModalVisible(false)}>
+              &times;
+            </span>
+            <h2>Modifier le matériau</h2>
+            <form onSubmit={handleUpdate}>
+              <label>Nom de l'article</label>
+              <input
+                type="text"
+                value={editedData.nomArticle}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    nomArticle: e.target.value,
+                  })
+                }
+              />
+              <label>Quantité</label>
+              <input
+                type="number"
+                value={editedData.quantity}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    quantity: Number(e.target.value),
+                  })
+                }
+              />
+              <label>Caractéristiques</label>
+              <input
+                type="text"
+                value={editedData.caracts}
+                onChange={(e) =>
+                  setEditedData({
+                    ...editedData,
+                    caracts: e.target.value,
+                  })
+                }
+              />
+              <button type="submit">Mettre à jour</button>
+            </form>
           </div>
-        )}
-      </>
-    );
-  }
+        </div>
+      )}
+    </>
+  );
+}
 
 export default Materiales;
-

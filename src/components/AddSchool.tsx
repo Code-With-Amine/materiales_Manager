@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import Papa from "papaparse";
+import add from "../assets/add-benificaire.png";
 
 interface FormData {
   ref: string;
@@ -49,6 +50,7 @@ function AddScholl() {
   const [alertMessage, setAlertMessage] = useState<string>("");
   const [uploadError, setUploadError] = useState<string>("");
   const [newFieldName, setNewFieldName] = useState<String>("");
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     const q = query(collection(db, "marches"));
@@ -97,15 +99,18 @@ function AddScholl() {
           error: (error) => reject(error),
         });
       });
-
-      for (const row of csvData.slice(1)) {
-        const data = await addToDB({
-          schoolName: row[0],
-          ville: row[1],
-          Adress: row[2],
-          email: row[3],
-          phone: row[4],
+      const keys = csvData[0];
+      const values = csvData.slice(1);
+      const result = values.map((row) => {
+        const obj: any = {};
+        keys.forEach((key, index) => {
+          obj[key] = row[index];
         });
+        return obj;
+      });
+
+      for (let i = 0; i > result.length; i++) {
+        await addToDB({ ...result[i] });
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -118,6 +123,7 @@ function AddScholl() {
     name !== "" &&
       value !== "" &&
       setFormData((prev) => ({ ...prev, [name]: value }));
+    setEditModalVisible(false);
   };
 
   const showAlert = (mesg: string) => {
@@ -154,92 +160,103 @@ function AddScholl() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="AddForm">
-      {alertMessage && <div className="alert">{alertMessage}</div>}
-      <div className="d-flex">
-        <div>
-          <select name="marcherID" onChange={handelChange} required>
-            <option value="">Choisir un marché</option>
-            {marches.map((marche) => (
-              <option key={marche.id} value={marche.reference}>
-                {marche.intitule} - {marche.reference}
-              </option>
-            ))}
-          </select>
+    <>
+      <form onSubmit={handleSubmit} className="AddForm">
+        {alertMessage && <div className="alert">{alertMessage}</div>}
+        <div className="d-flex">
+          <div>
+            <select name="marcherID" onChange={handelChange} required>
+              <option value="">Choisir un marché</option>
+              {marches.map((marche) => (
+                <option key={marche.id} value={marche.reference}>
+                  {marche.intitule} - {marche.reference}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select name="idMat" onChange={handelChange} required>
+              <option value="">Choisir un marché</option>
+              {matirs.map((matir) => (
+                <option key={matir.id} value={matir.id}>
+                  {matir.nomArticle}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="d-flex">
+          <div>
+            <label>Nom de l'école</label>
+            <input name="schoolName" onChange={handelChange} required />
+          </div>
+          <div>
+            <label>Téléphone</label>
+            <input name="phone" onChange={handelChange} />
+          </div>
         </div>
 
-        <div>
-          <select name="idMat" onChange={handelChange} required>
-            <option value="">Choisir un marché</option>
-            {matirs.map((matir) => (
-              <option key={matir.id} value={matir.id}>
-                {matir.nomArticle}
-              </option>
-            ))}
-          </select>
+        <div className="d-flex">
+          <div>
+            <label>Reference de l'école</label>
+            <input name="ref" onChange={handelChange} required />
+          </div>
+          <div>
+            <label>quantity</label>
+            <input
+              name="quantity"
+              type="number"
+              onChange={handelChange}
+              required
+            />
+          </div>
         </div>
-      </div>
+        <img
+          src={add}
+          className="icon d-center"
+          onClick={() => setEditModalVisible(true)}
+        />
 
-      <div>
-        <label>Reference de l'école</label>
-        <input name="ref" onChange={handelChange} required />
-      </div>
+        <div className="spearatingLine">
+          {" "}
+          <span></span> <p>OU</p> <span></span>{" "}
+        </div>
+        <div>
+          <input type="file" accept=".csv" onChange={handleUpload} />
 
-      <div className="d-flex">
-        <div>
-          <label>Nom de l'école</label>
-          <input name="schoolName" onChange={handelChange} required />
+          {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
         </div>
-        <div>
-          <label>Téléphone</label>
-          <input name="phone" onChange={handelChange} />
-        </div>
-      </div>
+        <button type="submit">Ajouter</button>
+      </form>
+      {editModalVisible && (
+        <div className="modal">
+          <div className="modal-content">
+            <span className="close" onClick={() => setEditModalVisible(false)}>
+              &times;
+            </span>
+            <h2>Ajouter nouveele column</h2>
 
-      <div className="d-flex">
-        <div>
-          <label>Ville</label>
-          <input name="ville" onChange={handelChange} />
+            <div>
+              <div>
+                <label>Le nom de nouveaux chemp</label>
+                <input
+                  onChange={(e) => setNewFieldName(e.target.value)}
+                  value={`${newFieldName}`}
+                />
+              </div>
+              <div>
+                <label>Le valeur de nouveaux Chemp </label>
+                <input name={`${newFieldName}`} onChange={handelChange} />
+              </div>
+              <button type="button" onClick={() => setNewFieldName("")}>
+                Ajouter une Column
+              </button>
+            </div>
+          </div>
         </div>
-        <div>
-          <label>quantity</label>
-          <input
-            name="quantity"
-            type="number"
-            onChange={handelChange}
-            required
-          />
-        </div>
-      </div>
-
-      <button type="button" onClick={() => setNewFieldName("")}>
-        Ajouter une Column
-      </button>
-      <div className="addChemp">
-        <div>
-          <label>Le nom de nouveaux chemp</label>
-          <input
-            onChange={(e) => setNewFieldName(e.target.value)}
-            value={`${newFieldName}`}
-          />
-        </div>
-        <div>
-          <label>Le valeur de nouveaux Chemp </label>
-          <input name={`${newFieldName}`} onChange={handelChange} />
-        </div>
-      </div>
-
-      <div className="spearatingLine">
-        {" "}
-        <span></span> <p>OU</p> <span></span>{" "}
-      </div>
-      <div>
-        <input type="file" accept=".csv" onChange={handleUpload} />
-
-        {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
-      </div>
-      <button type="submit">Ajouter</button>
-    </form>
+      )}
+    </>
   );
 }
 

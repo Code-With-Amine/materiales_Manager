@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, doc, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 interface AddModel {
@@ -120,7 +120,11 @@ const ModelAddSchool: React.FC<ModelAddSchoolProps> = ({
       });
     }
   };
-
+  const uniqueSchools = existingSchools.filter(
+    (school, index, self) =>
+      index ===
+      self.findIndex((s) => s.name === school.name && s.ref === school.ref)
+  );
   return (
     <div className="modal">
       <div className="modal-content">
@@ -147,7 +151,7 @@ const ModelAddSchool: React.FC<ModelAddSchoolProps> = ({
           <label>Sélectionner une École</label>
           <select name="schoolRef" onChange={handelChange} required>
             <option value="">Sélectionner une école...</option>
-            {existingSchools.map((school) => (
+            {uniqueSchools.map((school) => (
               <option key={school.id} value={school.id}>
                 {school.name} - {school.ref}
               </option>

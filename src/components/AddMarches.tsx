@@ -36,13 +36,18 @@ const AddMarches: React.FC = () => {
         });
       });
 
-      for (const row of csvData.slice(1)) {
-        await addToDB({
-          reference: row[0],
-          intitule: row[1],
-          provinciale: row[2],
-          created: Timestamp.now(),
+      const keys = csvData[0];
+      const values = csvData.slice(1);
+      const result = values.map((row) => {
+        const obj: any = {};
+        keys.forEach((key, index) => {
+          obj[key] = row[index];
         });
+        return obj;
+      });
+
+      for (let i = 0; i > result.length; i++) {
+        await addToDB({ ...result[i] });
       }
     } catch (error) {
       console.error("Upload error:", error);

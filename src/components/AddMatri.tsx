@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, Timestamp, getDocs } from "firebase/firestore";
 import Papa from "papaparse";
+import add from "../assets/add-benificaire.png";
 
 interface FormData {
   nomArticle: string;
@@ -14,6 +15,8 @@ interface FormData {
 interface MarcheData {
   id: string;
   reference: string;
+  intitule: string;
+  provinciale: string;
 }
 
 const AddMatri: React.FC = () => {
@@ -28,7 +31,7 @@ const AddMatri: React.FC = () => {
   const [uploadError, setUploadError] = useState<string>("");
   const [marches, setMarches] = useState<MarcheData[]>([]);
   const [newFieldName, setNewFieldName] = useState<String>("");
-
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   useEffect(() => {
     fetchMarches();
   }, []);
@@ -40,6 +43,8 @@ const AddMatri: React.FC = () => {
       const marcheList: MarcheData[] = marcheSnapshot.docs.map((doc) => ({
         id: doc.id,
         reference: doc.data().reference,
+        intitule: doc.data().intitule,
+        provinciale: doc.data().intitule
       }));
       setMarches(marcheList);
     } catch (error) {
@@ -62,15 +67,18 @@ const AddMatri: React.FC = () => {
           error: (error) => reject(error),
         });
       });
-
-      for (const row of csvData.slice(1)) {
-        await addToDB({
-          nomArticle: row[0],
-          caracts: row[1],
-          quantity: parseInt(row[2], 10),
-          marche: row[3],
-          created: Timestamp.now(),
+      const keys = csvData[0];
+      const values = csvData.slice(1);
+      const result = values.map((row) => {
+        const obj: any = {};
+        keys.forEach((key, index) => {
+          obj[key] = row[index];
         });
+        return obj;
+      });
+
+      for (let i = 0; i > result.length; i++) {
+        await addToDB({ ...result[i] });
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -83,6 +91,7 @@ const AddMatri: React.FC = () => {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setEditModalVisible(false);
   };
 
   const showAlert = (mesg: string) => {
@@ -114,62 +123,83 @@ const AddMatri: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="AddForm">
-      {alertMessage && <div className="alert">{alertMessage}</div>}
-      <div className="addChemp" style={{display:"flex", alignItems: "center"}}>
-        <div>
-          <select name="marche" onChange={handelChange}>
-            <option value="">Choisir un marché</option>
-            {marches.map((marche) => (
-              <option key={marche.id} value={marche.reference}>
-                {marche.reference}
-              </option>
-            ))}
-          </select>
-        </div>
+    <>
+      <form onSubmit={handleSubmit} className="AddForm">
+        {alertMessage && <div className="alert">{alertMessage}</div>}
+        <div
+          className="addChemp"
+          style={{ display: "flex", alignItems: "center", border: "none" }}
+        >
+          <div>
+            <select name="marche" onChange={handelChange}>
+              <option value="">Choisir un marché</option>
+              {marches.map((marche) => (
+                <option key={marche.id} value={marche.reference}>
+                  {marche.intitule} - {marche.reference}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="d-flext-block">
-          <label>Nom de l'article</label>
-          <input name="nomArticle" onChange={handelChange} />
+          <div className="d-flext-block">
+            <label>Nom de l'article</label>
+            <input name="nomArticle" onChange={handelChange} />
+          </div>
         </div>
-      </div>
-      <div className="d-flex">
-        <div>
-          <label>Caractéristique</label>
-          <input name="caracts" onChange={handelChange} />
+        <div className="addChemp">
+          <div>
+            <label>Caractéristique</label>
+            <input name="caracts" onChange={handelChange} />
+          </div>
+          <div>
+            <label>Quantité</label>
+            <input name="quantity" type="number" onChange={handelChange} />
+          </div>
         </div>
-        <div>
-          <label>Quantité</label>
-          <input name="quantity" type="number" onChange={handelChange} />
-        </div>
-      </div>
-      <button type="button" onClick={() => setNewFieldName("")}>
-        Ajouter une Column
-      </button>
-      <div className="addChemp">
-        <div>
-          <label>Le nom de nouveaux chemp</label>
-          <input
-            onChange={(e) => setNewFieldName(e.target.value)}
-            value={`${newFieldName}`}
-          />
-        </div>
-        <div>
-          <label>Le valeur de nouveaux Chemp </label>
-          <input name={`${newFieldName}`} onChange={handelChange} />
-        </div>
-      </div>
+        <img
+          src={add}
+          className="icon d-center"
+          onClick={() => setEditModalVisible(true)}
+        />
 
-      <div className="spearatingLine">
-        {" "}
-        <span></span> <p>OU</p> <span></span>{" "}
-      </div>
-      <div>
-        <input type="file" accept=".csv" onChange={handleUpload} />
-        {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
-      </div>
-      <button type="submit">Ajouter</button>
-    </form>
+        <div className="spearatingLine">
+          {" "}
+          <span></span> <p>OU</p> <span></span>{" "}
+        </div>
+        <div>
+          <input type="file" accept=".csv" onChange={handleUpload} />
+          {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+        </div>
+        <button type="submit">Ajouter</button>
+      </form>
+      {editModalVisible && (
+        <div className="modal">
+          <div className="modal-content">
+            <span className="close" onClick={() => setEditModalVisible(false)}>
+              &times;
+            </span>
+            <h2>Ajouter nouveele column</h2>
+
+            <div>
+              <div>
+                <label>Le nom de nouveaux chemp</label>
+                <input
+                  onChange={(e) => setNewFieldName(e.target.value)}
+                  value={`${newFieldName}`}
+                />
+              </div>
+              <div>
+                <label>Le valeur de nouveaux Chemp </label>
+                <input name={`${newFieldName}`} onChange={handelChange} />
+              </div>
+              <button type="button" onClick={() => setNewFieldName("")}>
+                Ajouter une Column
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

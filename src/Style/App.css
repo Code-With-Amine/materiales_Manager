@@ -8,21 +8,37 @@ body {
   flex-direction: column;
   /*position: relative;*/
   overflow: scroll;
-
 }
-.d-flext-block{
+@media print {
+  body * {
+    display: none;
+  }
+
+  .printable-table,
+  .printable-table * {
+    display: block !important;
+  }
+}
+
+.d-flext-block {
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
-.d-flex{
+.d-flex {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  width: 50vw;
 }
-.addChemp{
+.addChemp {
+  margin-top: 12px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   width: 100%;
+}
+.d-center {
+  display: block;
+  margin: 0 auto;
 }
 /*.backHome {
   position: absolute;
@@ -240,6 +256,18 @@ td {
   color: white; /* White text color */
 }
 
+.modal button {
+  background-color: #007bff;
+  border: none;
+  padding: 12px 20px;
+  color: white;
+  border-radius: 12px;
+  -webkit-border-radius: 12px;
+  -moz-border-radius: 12px;
+  -ms-border-radius: 12px;
+  -o-border-radius: 12px;
+}
+
 input[type="text"]:focus,
 input[type="number"]:focus {
   border-color: #007bff; /* Blue border on focus */
@@ -353,4 +381,18 @@ button[type="submit"]:hover {
   height: 2px;
   background-color: #ffaa00;
   width: 50%;
+}
+.download-button {
+  background-color: #007bff; /* Blue background color */
+  color: #fff; /* White text color */
+  padding: 8px 16px; /* Padding around the text */
+  border: none; /* No border */
+  border-radius: 4px; /* Rounded corners */
+  cursor: pointer; /* Cursor style on hover */
+  margin-bottom: 16px; /* Margin below the button */
+  font-size: 16px; /* Font size */
+}
+
+.download-button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
 }
